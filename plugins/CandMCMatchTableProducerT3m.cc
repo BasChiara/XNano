@@ -11,9 +11,9 @@
 #include <vector>
 #include <iostream>
 
-class CandMCMatchTableProducerX : public edm::global::EDProducer<> {
+class CandMCMatchTableProducerT3m : public edm::global::EDProducer<> {
     public:
-        CandMCMatchTableProducerX( edm::ParameterSet const & params ) :
+        CandMCMatchTableProducerT3m( edm::ParameterSet const & params ) :
             objName_(params.getParameter<std::string>("objName")),
             branchName_(params.getParameter<std::string>("branchName")),
             doc_(params.getParameter<std::string>("docString")),
@@ -53,7 +53,7 @@ class CandMCMatchTableProducerX : public edm::global::EDProducer<> {
 	    }
         }
 
-        ~CandMCMatchTableProducerX() override {}
+        ~CandMCMatchTableProducerT3m() override {}
 
         void produce(edm::StreamID id, edm::Event& iEvent, const edm::EventSetup& iSetup) const override {
 
@@ -135,7 +135,7 @@ class CandMCMatchTableProducerX : public edm::global::EDProducer<> {
             desc.add<edm::InputTag>("mcMap")->setComment("tag to an edm::Association<GenParticleCollection> mapping src to gen, such as the one produced by MCMatcher");
             desc.add<std::string>("objType")->setComment("type of object to match (Muon, Electron, Tau, Photon, Track, Other), taylors what's in t Flav branch");
             desc.addOptional<edm::InputTag>("mcMapVisTau")->setComment("as mcMap, but pointing to the visible gen taus (only if objType == Tau)");
-            descriptions.add("candMcMatchTable_X", desc);
+            descriptions.add("candMcMatchTable", desc);
         }
 
     protected:
@@ -148,5 +148,5 @@ class CandMCMatchTableProducerX : public edm::global::EDProducer<> {
 };
 
 #include "FWCore/Framework/interface/MakerMacros.h"
-DEFINE_FWK_MODULE(CandMCMatchTableProducerX);
+DEFINE_FWK_MODULE(CandMCMatchTableProducerT3m);
 
