@@ -34,9 +34,9 @@ options.register('skip', 0,
     "skip first N events"
 )
 
-options.setDefault('maxEvents', -1)
-#options.setDefault('maxEvents', 1000)
-options.setDefault('tag', 'prova')
+#options.setDefault('maxEvents', -1)
+options.setDefault('maxEvents', 1000)
+options.setDefault('tag', 'prova_fullHLT')
 options.parseArguments()
 
 # global tags:
