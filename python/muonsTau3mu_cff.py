@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 #from HLTpathsT3m_cff import Path_Tau3Mu2022 
 
-Path2022=["HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1_v6","HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_v6","HLT_DoubleMu4_3_LowMass"]
+Path2022=["HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1","HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15","HLT_DoubleMu4_3_LowMass"]
 
 Path=Path2022
 
@@ -16,8 +16,8 @@ triMuonTrgSelector = cms.EDProducer("TriMuonTriggerSelector",
                                  drForTriggerMatch = cms.double(0.03),     
 
                                  ## for the output selected collection 
-                                 ptMin = cms.double(0.5),                            
-                                 absEtaMax = cms.double(2.4),
+                                 ptMin = cms.double(1.0),                            
+                                 absEtaMax = cms.double(2.5),
 
                                  HLTPaths=cms.vstring(Path)
                              )
@@ -38,7 +38,7 @@ muonT3mTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     doc  = cms.string("slimmedMuons for Tau3mu analysis after basic selection"),
     singleton = cms.bool(False),         
     extension = cms.bool(False),         
-        variables = cms.PSet( 
+    variables = cms.PSet( 
         isGlobal = Var("userInt('isGlobal')",bool,doc="muon is global muon"),
         softId = Var("passed('SoftCutBasedId')",bool,doc="soft cut-based ID"), 
         looseId = Var("userInt('looseId')",bool,doc="loose cut-based ID"),
