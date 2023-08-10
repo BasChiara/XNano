@@ -2,8 +2,8 @@ import FWCore.ParameterSet.Config as cms
 from PhysicsTools.NanoAOD.common_cff import *
 #from HLTpathsT3m_cff import Path_Tau3Mu2022 
 
-Path2022=["HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1","HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15","HLT_DoubleMu4_3_LowMass"]
-
+#Path2022=["HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1","HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15","HLT_DoubleMu4_3_LowMass"]
+Path2022=["HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1","HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"]
 Path=Path2022
 
 triMuonTrgSelector = cms.EDProducer("TriMuonTriggerSelector",
@@ -13,7 +13,7 @@ triMuonTrgSelector = cms.EDProducer("TriMuonTriggerSelector",
                                  objects = cms.InputTag("slimmedPatTrigger"),
                                  
                                  ## trigger match
-                                 drForTriggerMatch = cms.double(0.03),     
+                                 drForTriggerMatch = cms.double(0.1),     
 
                                  ## for the output selected collection 
                                  ptMin = cms.double(1.0),                            
@@ -39,9 +39,14 @@ muonT3mTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
     singleton = cms.bool(False),         
     extension = cms.bool(False),         
     variables = cms.PSet( 
+        isPFcand = Var("userInt('isPFcand')",bool,doc="muon is global muon"),
         isGlobal = Var("userInt('isGlobal')",bool,doc="muon is global muon"),
-        softId = Var("passed('SoftCutBasedId')",bool,doc="soft cut-based ID"), 
-        looseId = Var("userInt('looseId')",bool,doc="loose cut-based ID"),
+        isLoose  = Var("userInt('isLoose')",bool,doc="muon is loose muon"),
+        isMedium = Var("userInt('isMedium')",bool,doc="muon is medium muon"),
+        #isSoft   = Var("passed('isSoft')",bool,doc="soft cut-based ID"), 
+        #isTight  = Var("userInt('isTight')",bool,doc="muon is tight muon"),
+        isTracker= Var("userInt('isTracker')",bool,doc="muon is tight muon"),
+        
         charge = Var("userInt('charge')",bool,doc="charge"),
         trackQuality = Var("userInt('trackQuality')",int,doc="trackQuality"),
     ),

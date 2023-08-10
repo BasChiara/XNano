@@ -289,10 +289,16 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
     muons_out->back().addUserInt("isPFcand", isPFcand);    
     int isGlobal = (int) muon.isGlobalMuon();
     muons_out->back().addUserInt("isGlobal", isGlobal);    
+    int isLoose = (int) muon.isLooseMuon();
+    muons_out->back().addUserInt("isLoose", isLoose);    
+    int isMedium = (int) muon.isMediumMuon();
+    muons_out->back().addUserInt("isMedium", isMedium);    
+    //int isSoft = (int) muon.isSoftMuon(); // need a vertex (??)
+    //muons_out->back().addUserInt("isSoft", isSoft);    
+    //int isTight = (int) muon.isTightMuon();
+    //muons_out->back().addUserInt("isTight", isTight);    
     int isTracker = (int) muon.isTrackerMuon();
-    muons_out->back().addUserInt("isTracker", isTracker);    
-    int isLoose = (int)muon.isLooseMuon();
-    muons_out->back().addUserInt("looseId", isLoose);
+    muons_out->back().addUserInt("isTracker", isTracker); 
     muons_out->back().addUserInt("charge", muon.charge());
     if( muon.innerTrack().isNull() ) 
       muons_out->back().addUserInt("trackQuality", 999);
