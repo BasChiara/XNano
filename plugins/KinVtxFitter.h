@@ -38,6 +38,10 @@ public:
     return fitted_children_.at(i)->currentState(); 
   }
 
+  const std::vector< RefCountedKinematicParticle > fitted_children() const{
+    return fitted_children_;
+  }
+
   const math::PtEtaPhiMLorentzVector daughter_p4(size_t i) const { 
     const auto& state = fitted_children_.at(i)->currentState();
     return math::PtEtaPhiMLorentzVector(
