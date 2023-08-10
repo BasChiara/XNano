@@ -9,11 +9,11 @@ muonTripletForTau3Mu = cms.EDProducer('TriMuonBuilder',
     src = cms.InputTag('triMuonTrgSelector', 'SelectedMuons'),
     transientTracksSrc = cms.InputTag('triMuonTrgSelector', 'SelectedTransientMuons'),
     beamSpot   = cms.InputTag("offlineBeamSpot"),
-    lep1Selection = cms.string('(abs(eta) <= 1.2 && pt > 3.5) || (abs(eta) > 1.2 && abs(eta) < 2.4 && pt > 2.0)'),
-    lep2Selection = cms.string('(abs(eta) <= 1.2 && pt > 3.5) || (abs(eta) > 1.2 && abs(eta) < 2.4 && pt > 2.0)'),
-    lep3Selection = cms.string('(abs(eta) <= 1.2 && pt > 3.5) || (abs(eta) > 1.2 && abs(eta) < 2.4 && pt > 2.0)'),
-    preVtxSelection = cms.string('mass() < 3 && abs(charge()) == 1'),
-    postVtxSelection =  cms.string('userFloat("sv_prob") > 0.01'),
+    lep1Selection = cms.string('isMediumMuon && ((abs(eta) <= 1.2 && pt > 3.5) || (abs(eta) > 1.2 && abs(eta) < 2.4 && pt > 2.0))'),
+    lep2Selection = cms.string('isMediumMuon && ((abs(eta) <= 1.2 && pt > 3.5) || (abs(eta) > 1.2 && abs(eta) < 2.4 && pt > 2.0))'),
+    lep3Selection = cms.string('isMediumMuon && ((abs(eta) <= 1.2 && pt > 3.5) || (abs(eta) > 1.2 && abs(eta) < 2.4 && pt > 2.0))'),
+    preVtxSelection = cms.string('mass() < 3 && abs(charge()) == 1'), # selection for tau candidates pre-fit
+    postVtxSelection =  cms.string('userInt("vtx_isValid")'),
     #preVtxSelection = cms.string('abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
     #                             '&& mass() > 1 && charge() == 0 && userFloat("lep_deltaR") > 0.02'),
     #postVtxSelection =  cms.string('userFloat("sv_prob") > 0.01'
@@ -36,11 +36,21 @@ Tau3MuTable = cms.EDProducer(
         mu1_idx = uint('l1_idx'),
         mu2_idx = uint('l2_idx'),
         mu3_idx = uint('l3_idx'),
-        fitted_pt = ufloat('fitted_pt'),
-        fitted_eta = ufloat('fitted_eta'),
-        fitted_phi = ufloat('fitted_phi'),
-        sv_prob = ufloat("sv_prob"),
-        fitted_mass = ufloat("fitted_mass"),
+        #Tau_charge  = uint('Tau_charge'),
+
+        vtx_prob = ufloat("vtx_prob"),
+        vtx_isValid = uint("vtx_isValid"),
+
+        fitted_wovc_pt   = ufloat('fitted_wovc_pt'),
+        fitted_wovc_eta  = ufloat('fitted_wovc_eta'),
+        fitted_wovc_phi  = ufloat('fitted_wovc_phi'),
+        fitted_wovc_mass = ufloat("fitted_wovc_mass"),
+
+        fitted_vc_pt   = ufloat('fitted_vc_pt'),
+        fitted_vc_eta  = ufloat('fitted_vc_eta'),
+        fitted_vc_phi  = ufloat('fitted_vc_phi'),
+        fitted_vc_mass = ufloat("fitted_vc_mass"),
+        
         mu1_pt = ufloat("mu1_pt"),
         mu1_eta = ufloat("mu1_eta"),
         mu1_phi = ufloat("mu1_phi"),
@@ -58,16 +68,16 @@ Tau3MuTable = cms.EDProducer(
         mu3_trackQuality = uint("mu3_trackQuality"),
         mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1 = uint("mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"),
         mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15 = uint("mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"),
-        mu1_fired_DoubleMu4_3_LowMass = uint("mu1_fired_DoubleMu4_3_LowMass"),
+        #mu1_fired_DoubleMu4_3_LowMass = uint("mu1_fired_DoubleMu4_3_LowMass"),
 
 
         mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1 = uint("mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"),
         mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15 = uint("mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"),
-        mu2_fired_DoubleMu4_3_LowMass = uint("mu2_fired_DoubleMu4_3_LowMass"),
+        #mu2_fired_DoubleMu4_3_LowMass = uint("mu2_fired_DoubleMu4_3_LowMass"),
 
         mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1 = uint("mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"),
         mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15 = uint("mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"),
-        mu3_fired_DoubleMu4_3_LowMass = uint("mu3_fired_DoubleMu4_3_LowMass"),
+        #mu3_fired_DoubleMu4_3_LowMass = uint("mu3_fired_DoubleMu4_3_LowMass"),
     )
 )
 
