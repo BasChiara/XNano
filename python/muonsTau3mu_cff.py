@@ -47,7 +47,7 @@ muonT3mTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         #isTight  = Var("userInt('isTight')",bool,doc="muon is tight muon"),
         isTracker= Var("userInt('isTracker')",bool,doc="muon is tight muon"),
         
-        charge = Var("userInt('charge')",bool,doc="charge"),
+        charge = Var("userInt('charge')",int,doc="charge"),
         trackQuality = Var("userInt('trackQuality')",int,doc="trackQuality"),
     ),
 )
