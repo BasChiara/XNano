@@ -102,7 +102,7 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         pat::CompositeCandidate muon_triplet;
         muon_triplet.setP4(l1_ptr->p4() + l2_ptr->p4() + l3_ptr->p4());
         muon_triplet.setCharge(l1_ptr->charge() + l2_ptr->charge() + l3_ptr->charge());
-        muon_triplet.addUserInt("mu1_charge" ,l1_ptr->charge());
+        muon_triplet.addUserInt("charge", muon_triplet.charge());
         //muon_triplet.addUserFloat("lep_deltaR", reco::deltaR(*l1_ptr, *l2_ptr));
     
         // Put the lepton passing the corresponding selection
@@ -215,16 +215,19 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         muon_triplet.addUserFloat("mu1_eta", l1_ptr->eta());
         muon_triplet.addUserFloat("mu1_phi", l1_ptr->phi());
         muon_triplet.addUserFloat("mu1_dr",  l1_ptr->userFloat("dr"));
+        muon_triplet.addUserInt("mu1_charge" ,l1_ptr->charge());
         muon_triplet.addUserInt("mu1_trackQuality",  l1_ptr->userInt("trackQuality"));
         muon_triplet.addUserFloat("mu2_pt",  l2_ptr->pt());
         muon_triplet.addUserFloat("mu2_eta", l2_ptr->eta());
         muon_triplet.addUserFloat("mu2_phi", l2_ptr->phi());
         muon_triplet.addUserFloat("mu2_dr",  l2_ptr->userFloat("dr"));   
+        muon_triplet.addUserInt("mu2_charge" ,l2_ptr->charge());
         muon_triplet.addUserInt("mu2_trackQuality",  l2_ptr->userInt("trackQuality"));
         muon_triplet.addUserFloat("mu3_pt",  l3_ptr->pt());
         muon_triplet.addUserFloat("mu3_eta", l3_ptr->eta());
         muon_triplet.addUserFloat("mu3_phi", l3_ptr->phi());
         muon_triplet.addUserFloat("mu3_dr",  l3_ptr->userFloat("dr"));   
+        muon_triplet.addUserInt("mu3_charge" ,l3_ptr->charge());
         muon_triplet.addUserInt("mu3_trackQuality",  l3_ptr->userInt("trackQuality"));
 
         // save further quantities, to be saved in the final ntuples: fired paths

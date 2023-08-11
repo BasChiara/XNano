@@ -36,8 +36,10 @@ Tau3MuTable = cms.EDProducer(
         mu1_idx = uint('l1_idx'),
         mu2_idx = uint('l2_idx'),
         mu3_idx = uint('l3_idx'),
-        #Tau_charge  = uint('Tau_charge'),
+        charge  = uint('charge'),
         mu1_charge = uint("mu1_charge"),
+        mu2_charge = uint("mu2_charge"),
+        mu3_charge = uint("mu3_charge"),
 
         vtx_prob = ufloat("vtx_prob"),
         vtx_isValid = uint("vtx_isValid"),
