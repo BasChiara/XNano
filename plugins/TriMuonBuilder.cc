@@ -20,6 +20,7 @@
 #include "RecoVertex/KinematicFitPrimitives/interface/MultiTrackKinematicConstraint.h"
 #include "RecoVertex/KinematicFit/interface/TwoTrackMassKinematicConstraint.h"
 #include "RecoVertex/KinematicFit/interface/KinematicConstrainedVertexFitter.h"
+#include "RecoVertex/KinematicFitPrimitives/interface/KinematicParticleFactoryFromTransientTrack.h" 
 
 #include <vector>
 #include <string>
@@ -67,6 +68,8 @@ private:
 };
 
 void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup const &) const {
+
+  float the_MUON_SIGMA = 0.0000001;
   
   // input
   edm::Handle<MuonCollection> muons;
@@ -99,7 +102,7 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         pat::CompositeCandidate muon_triplet;
         muon_triplet.setP4(l1_ptr->p4() + l2_ptr->p4() + l3_ptr->p4());
         muon_triplet.setCharge(l1_ptr->charge() + l2_ptr->charge() + l3_ptr->charge());
-        //muon_triplet.addUserInt("Tau_charge" ,l1_ptr->charge());
+        muon_triplet.addUserInt("mu1_charge" ,l1_ptr->charge());
         //muon_triplet.addUserFloat("lep_deltaR", reco::deltaR(*l1_ptr, *l2_ptr));
     
         // Put the lepton passing the corresponding selection
@@ -133,9 +136,9 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         // 2nd KinVtx fit with vertex costraint
         KinematicParticleFactoryFromTransientTrack factory;
         std::vector<RefCountedKinematicParticle> particles;
-        particles.emplace_back(factory.particle( ttracks->at(l1_idx), l1_ptr->mass(), 0., 0., LEP_SIGMA));
-        particles.emplace_back(factory.particle( ttracks->at(l2_idx), l2_ptr->mass(), 0., 0., LEP_SIGMA));
-        particles.emplace_back(factory.particle( ttracks->at(l3_idx), l3_ptr->mass(), 0., 0., LEP_SIGMA));
+        particles.emplace_back(factory.particle( ttracks->at(l1_idx), l1_ptr->mass(), 0., 0., the_MUON_SIGMA));
+        particles.emplace_back(factory.particle( ttracks->at(l2_idx), l2_ptr->mass(), 0., 0., the_MUON_SIGMA));
+        particles.emplace_back(factory.particle( ttracks->at(l3_idx), l3_ptr->mass(), 0., 0., the_MUON_SIGMA));
         //std::vector<RefCountedKinematicParticle> fitted_muons = fitter.fitted_children();
         //kinstate_muons.push_back(fitter.fitted_daughter(0));
         //kinstate_muons.push_back(fitter.fitted_daughter(1));
@@ -227,16 +230,16 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         // save further quantities, to be saved in the final ntuples: fired paths
         muon_triplet.addUserInt("mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1", l1_ptr->userInt("HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"));
         muon_triplet.addUserInt("mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15", l1_ptr->userInt("HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"));
-        //muon_triplet.addUserInt("mu1_fired_DoubleMu4_3_LowMass", l1_ptr->userInt("HLT_DoubleMu4_3_LowMass"));
+        muon_triplet.addUserInt("mu1_fired_DoubleMu4_3_LowMass", l1_ptr->userInt("HLT_DoubleMu4_3_LowMass"));
 
 
         muon_triplet.addUserInt("mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1", l2_ptr->userInt("HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"));
         muon_triplet.addUserInt("mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15", l2_ptr->userInt("HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"));
-        //muon_triplet.addUserInt("mu2_fired_DoubleMu4_3_LowMass", l2_ptr->userInt("HLT_DoubleMu4_3_LowMass"));
+        muon_triplet.addUserInt("mu2_fired_DoubleMu4_3_LowMass", l2_ptr->userInt("HLT_DoubleMu4_3_LowMass"));
 
         muon_triplet.addUserInt("mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1", l3_ptr->userInt("HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"));
         muon_triplet.addUserInt("mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15", l3_ptr->userInt("HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"));
-        //muon_triplet.addUserInt("mu3_fired_DoubleMu4_3_LowMass", l3_ptr->userInt("HLT_DoubleMu4_3_LowMass"));
+        muon_triplet.addUserInt("mu3_fired_DoubleMu4_3_LowMass", l3_ptr->userInt("HLT_DoubleMu4_3_LowMass"));
 
         //muon_triplet.addUserFloat("mu1_dr_Dimuon25_Jpsi",        l1_ptr->userFloat("HLT_Dimuon25_Jpsi_dr"));
         //muon_triplet.addUserFloat("mu2_dr_Dimuon25_Jpsi",        l2_ptr->userFloat("HLT_Dimuon25_Jpsi_dr"));

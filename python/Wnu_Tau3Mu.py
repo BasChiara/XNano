@@ -37,6 +37,7 @@ Tau3MuTable = cms.EDProducer(
         mu2_idx = uint('l2_idx'),
         mu3_idx = uint('l3_idx'),
         #Tau_charge  = uint('Tau_charge'),
+        mu1_charge = uint("mu1_charge"),
 
         vtx_prob = ufloat("vtx_prob"),
         vtx_isValid = uint("vtx_isValid"),
@@ -68,16 +69,16 @@ Tau3MuTable = cms.EDProducer(
         mu3_trackQuality = uint("mu3_trackQuality"),
         mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1 = uint("mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"),
         mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15 = uint("mu1_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"),
-        #mu1_fired_DoubleMu4_3_LowMass = uint("mu1_fired_DoubleMu4_3_LowMass"),
+        mu1_fired_DoubleMu4_3_LowMass = uint("mu1_fired_DoubleMu4_3_LowMass"),
 
 
         mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1 = uint("mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"),
         mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15 = uint("mu2_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"),
-        #mu2_fired_DoubleMu4_3_LowMass = uint("mu2_fired_DoubleMu4_3_LowMass"),
+        mu2_fired_DoubleMu4_3_LowMass = uint("mu2_fired_DoubleMu4_3_LowMass"),
 
         mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1 = uint("mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"),
         mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15 = uint("mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"),
-        #mu3_fired_DoubleMu4_3_LowMass = uint("mu3_fired_DoubleMu4_3_LowMass"),
+        mu3_fired_DoubleMu4_3_LowMass = uint("mu3_fired_DoubleMu4_3_LowMass"),
     )
 )
 
