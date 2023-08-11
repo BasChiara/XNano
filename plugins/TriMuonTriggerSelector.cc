@@ -132,6 +132,7 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
 		<< std::endl;
   }
 
+  
   std::cout << std::endl;
   std::cout << "\n TRIGGER OBJECTS " << std::endl;
   for (pat::TriggerObjectStandAlone obj : *triggerObjects) { 
@@ -159,9 +160,9 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
       if (isNone && !isBoth && !isL3 && !isLF) std::cout << "(*,*)";
     }
     std::cout << std::endl;
-  }
+    }*/
   // debug end
-  */
+  
   // ----------------------------------------------------------
 
 
