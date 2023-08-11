@@ -5,6 +5,7 @@ from PhysicsTools.NanoAOD.globals_cff import *
 from PhysicsTools.NanoAOD.nano_cff import *
 from PhysicsTools.NanoAOD.vertices_cff import *
 from PhysicsTools.NanoAOD.NanoAODEDMEventContent_cff import *
+from PhysicsTools.NanoAOD.met_cff import *
 from PhysicsTools.XNano.trgbits_cff import * # modified
 
 ## for gen and trigger muon
@@ -23,7 +24,7 @@ from PhysicsTools.XNano.Wnu_Tau3Mu import * #define new
 nanoSequenceOnlyFullSim = cms.Sequence(triggerObjectTau3MuTables + l1bits)
 
 nanoSequence = cms.Sequence(nanoMetadata + 
-                            cms.Sequence(vertexTask) +           
+                            cms.Sequence(vertexTask) + cms.Sequence(metTablesTask) +           
                             cms.Sequence(globalTablesTask) + cms.Sequence(vertexTablesTask) +
                             triggerObjectTau3MuTables + l1bits)
 
