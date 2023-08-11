@@ -29,27 +29,27 @@ class TriggerObjectTableProducerTau3Mu : public edm::stream::EDProducer<> {
         explicit TriggerObjectTableProducerTau3Mu(const edm::ParameterSet &iConfig) :
             name_(iConfig.getParameter<std::string>("name")),
             src_(consumes<std::vector<pat::TriggerObjectStandAlone>>(iConfig.getParameter<edm::InputTag>("src")))
-        {
-            std::vector<edm::ParameterSet> selPSets = iConfig.getParameter<std::vector<edm::ParameterSet>>("selections");
-            sels_.reserve(selPSets.size());
-            std::stringstream idstr, qualitystr;
-            idstr << "ID of the object: ";
-            for (auto & pset : selPSets) {
-                sels_.emplace_back(pset);
-                idstr << sels_.back().id << " = " << sels_.back().name;
-		std::cout << sels_.back().id << " = " << sels_.back().name << std::endl; 
-                if (sels_.size() < selPSets.size()) idstr << ", ";
-                if (sels_.size() < selPSets.size()) std::cout << ", ";
-                if (!sels_.back().qualityBitsDoc.empty()) { 
-		  qualitystr << sels_.back().qualityBitsDoc << " for " << sels_.back().name << "; ";
-		  std::cout << sels_.back().qualityBitsDoc << " for " << sels_.back().name << "; " << std::endl;
-		}
-            }
-            idDoc_ = idstr.str();
-            bitsDoc_ = qualitystr.str();
+            {
+                std::vector<edm::ParameterSet> selPSets = iConfig.getParameter<std::vector<edm::ParameterSet>>("selections");
+                sels_.reserve(selPSets.size());
+                std::stringstream idstr, qualitystr;
+                idstr << "ID of the object: ";
+                for (auto & pset : selPSets) {
+                    sels_.emplace_back(pset);
+                    idstr << sels_.back().id << " = " << sels_.back().name;
+		            std::cout << sels_.back().id << " = " << sels_.back().name << std::endl; 
+                    if (sels_.size() < selPSets.size()) idstr << ", ";
+                    if (sels_.size() < selPSets.size()) std::cout << ", ";
+                    if (!sels_.back().qualityBitsDoc.empty()) { 
+		                qualitystr << sels_.back().qualityBitsDoc << " for " << sels_.back().name << "; ";
+		            std::cout << sels_.back().qualityBitsDoc << " for " << sels_.back().name << "; " << std::endl;
+		            }
+                }
+                idDoc_ = idstr.str();
+                bitsDoc_ = qualitystr.str();
 
-            produces<nanoaod::FlatTable>();
-        }
+                produces<nanoaod::FlatTable>();
+            }
 
         ~TriggerObjectTableProducerTau3Mu() override {}
 
@@ -65,19 +65,19 @@ class TriggerObjectTableProducerTau3Mu : public edm::stream::EDProducer<> {
             int id;
             StringCutObjectSelector<pat::TriggerObjectStandAlone> cut;
             StringCutObjectSelector<pat::TriggerObjectStandAlone> l1cut, l1cut_2, l2cut;
-   	    float       l1DR2, l1DR2_2, l2DR2; 
-	    StringObjectFunction<pat::TriggerObjectStandAlone> qualityBits;
-	    std::string qualityBitsDoc;
+   	        float       l1DR2, l1DR2_2, l2DR2; 
+	        StringObjectFunction<pat::TriggerObjectStandAlone> qualityBits;
+	        std::string qualityBitsDoc;
 
             SelectedObject(const edm::ParameterSet & pset) :
-	      name(pset.getParameter<std::string>("name")),
-	      id(pset.getParameter<int>("id")),
-	      cut(pset.getParameter<std::string>("sel")),
-	      l1cut(""), l1cut_2(""), l2cut(""),
-	      l1DR2(-1), l1DR2_2(-1), l2DR2(-1),
-	      qualityBits(pset.getParameter<std::string>("qualityBits")),
-	      qualityBitsDoc(pset.getParameter<std::string>("qualityBitsDoc"))
-	  { }
+	        name(pset.getParameter<std::string>("name")),
+	        id(pset.getParameter<int>("id")),
+	        cut(pset.getParameter<std::string>("sel")),
+	        l1cut(""), l1cut_2(""), l2cut(""),
+	        l1DR2(-1), l1DR2_2(-1), l2DR2(-1),
+	        qualityBits(pset.getParameter<std::string>("qualityBits")),
+	        qualityBitsDoc(pset.getParameter<std::string>("qualityBitsDoc"))
+	        { }
 
             bool match(const pat::TriggerObjectStandAlone & obj) const {
                 return cut(obj);
