@@ -36,7 +36,7 @@ options.register('skip', 0,
 
 #options.setDefault('maxEvents', -1)
 options.setDefault('maxEvents', 1000)
-options.setDefault('tag', 'prova_fullHLT')
+options.setDefault('tag', 'prova')
 options.parseArguments()
 
 # global tags:
