@@ -8,6 +8,8 @@ from PhysicsTools.XNano.common_cff import *
 muonTripletForTau3Mu = cms.EDProducer('TriMuonBuilder',
     src = cms.InputTag('triMuonTrgSelector', 'SelectedMuons'),
     transientTracksSrc = cms.InputTag('triMuonTrgSelector', 'SelectedTransientMuons'),
+    met = cms.InputTag('slimmedMETs'),
+    PuppiMet = cms.InputTag('slimmedMETsPuppi'),
     beamSpot   = cms.InputTag("offlineBeamSpot"),
     lep1Selection = cms.string('isMediumMuon && ((abs(eta) <= 1.2 && pt > 3.5) || (abs(eta) > 1.2 && abs(eta) < 2.4 && pt > 2.0))'),
     lep2Selection = cms.string('isMediumMuon && ((abs(eta) <= 1.2 && pt > 3.5) || (abs(eta) > 1.2 && abs(eta) < 2.4 && pt > 2.0))'),
@@ -54,6 +56,13 @@ Tau3MuTable = cms.EDProducer(
         fitted_vc_phi  = ufloat('fitted_vc_phi'),
         fitted_vc_mass = ufloat("fitted_vc_mass"),
         
+        MET_pt = ufloat('MET_pt'),
+        mT = ufloat("mT"), 
+        MET_isPf = uint('MET_isPf'),
+        PuppiMET_pt = ufloat('PuppiMET_pt'),
+        Puppi_mT = ufloat("Puppi_mT"), 
+        PuppiMET_isPf = uint('PuppiMET_isPf'),
+
         mu1_pt = ufloat("mu1_pt"),
         mu1_eta = ufloat("mu1_eta"),
         mu1_phi = ufloat("mu1_phi"),

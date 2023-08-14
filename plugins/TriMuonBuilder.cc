@@ -9,6 +9,7 @@
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "TrackingTools/PatternTools/interface/ClosestApproachInRPhi.h"
@@ -24,6 +25,7 @@
 
 #include <vector>
 #include <string>
+#include <cmath>
 #include "TLorentzVector.h"
 
 #include "helper.h"
@@ -34,6 +36,7 @@ class TriMuonBuilder : public edm::global::EDProducer<> {
 public:
 
   typedef std::vector<pat::Muon> MuonCollection;
+  //typedef std::vector<pat::MET> MetCollection;
   typedef std::vector<reco::TransientTrack> TransientTrackCollection;
 
   explicit TriMuonBuilder(const edm::ParameterSet &cfg):
@@ -44,6 +47,8 @@ public:
     post_vtx_selection_{cfg.getParameter<std::string>("postVtxSelection")},
     src_{consumes<MuonCollection>( cfg.getParameter<edm::InputTag>("src") )},
     ttracks_src_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("transientTracksSrc") )},
+    met_{consumes<pat::METCollection>( cfg.getParameter<edm::InputTag>("met") )},
+    PuppiMet_{consumes<pat::METCollection>( cfg.getParameter<edm::InputTag>("PuppiMet") )},
     beamSpotSrc_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )}
     {
       produces<pat::CompositeCandidateCollection>("SelectedTriMuons");
@@ -63,6 +68,8 @@ private:
   const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_;
   const edm::EDGetTokenT<MuonCollection> src_;
   const edm::EDGetTokenT<TransientTrackCollection> ttracks_src_;
+  const edm::EDGetTokenT<pat::METCollection> met_;
+  const edm::EDGetTokenT<pat::METCollection> PuppiMet_;
   const edm::EDGetTokenT<reco::BeamSpot> beamSpotSrc_;
   const bool debug = false;
 };
@@ -77,6 +84,14 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   
   edm::Handle<TransientTrackCollection> ttracks;
   evt.getByToken(ttracks_src_, ttracks);
+
+  edm::Handle<pat::METCollection> Met;
+  evt.getByToken(met_, Met);
+  const pat::MET &met = Met->front();// get PF Type-1 corrected MET directly available from miniAOD
+
+  edm::Handle<pat::METCollection> P_Met;
+  evt.getByToken(PuppiMet_, P_Met);
+  const pat::MET &PuppiMet = P_Met->front();
 
   edm::Handle<reco::BeamSpot> beamSpotHandle;
   evt.getByToken(beamSpotSrc_, beamSpotHandle);
@@ -148,7 +163,8 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         kinstate_muons.push_back(particles.at(1)->currentState());
         kinstate_muons.push_back(particles.at(2)->currentState());
 
-        MultiTrackKinematicConstraint * vtxCostraint = new VertexKinematicConstraint(); // from : https://github.com/cms-sw/cmssw/blob/master/RecoVertex/KinematicFit/src/VertexKinematicConstraint.cc
+        MultiTrackKinematicConstraint * vtxCostraint = new VertexKinematicConstraint(); 
+        // from : https://github.com/cms-sw/cmssw/blob/master/RecoVertex/KinematicFit/src/VertexKinematicConstraint.cc
         vtxCostraint->value(kinstate_muons, fitted_vtx->position());
         KinematicConstrainedVertexFitter vc_fitter;
         RefCountedKinematicTree vc_FitTree = vc_fitter.fit(particles, vtxCostraint);
@@ -161,6 +177,10 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 			                      refitted_cand.globalMomentum().phi(),
 			                      refitted_cand.mass());
 
+
+       // transverse mass
+       float Tau_mT = std::sqrt(2. * Tau_vc.Perp()* met.pt() * (1 - std::cos(Tau_vc.Phi()-met.phi())));
+       float Tau_Puppi_mT = std::sqrt(2. * Tau_vc.Perp()* PuppiMet.pt() * (1 - std::cos(Tau_vc.Phi()-PuppiMet.phi())));
 
         //// DCA between the two muons (used at HLT)
         //float DCA = 10.;
@@ -208,6 +228,15 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         muon_triplet.addUserFloat("fitted_vc_eta" , Tau_vc.Eta());
         muon_triplet.addUserFloat("fitted_vc_phi" , Tau_vc.Phi());
         muon_triplet.addUserFloat("fitted_vc_mass", refitted_cand.mass()); 
+
+        // MET infos
+        muon_triplet.addUserFloat("MET_pt", met.pt()); 
+        muon_triplet.addUserFloat("mT", Tau_mT); 
+        muon_triplet.addUserInt("MET_isPf", met.isPFMET()); 
+        muon_triplet.addUserFloat("PuppiMET_pt", PuppiMet.pt()); 
+        muon_triplet.addUserFloat("Puppi_mT", Tau_Puppi_mT); 
+        muon_triplet.addUserInt("PuppiMET_isPf", PuppiMet.isPFMET()); 
+        
 
         // save further quantities, to be saved in the final ntuples: muons before fit
         // Muons post fit are saved only after the very final B fit
