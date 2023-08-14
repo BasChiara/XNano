@@ -28,7 +28,7 @@ nanoSequence = cms.Sequence(nanoMetadata +
                             cms.Sequence(globalTablesTask) + cms.Sequence(vertexTablesTask) +
                             triggerObjectTau3MuTables + l1bits)
 
-nanoSequenceMC = cms.Sequence(particleLevelT3mSequence + genParticleT3mSequence + 
+nanoSequenceMC = cms.Sequence(particleLevelT3mSequence + genParticleT3mSequence + cms.Sequence(metMCTask) + 
                               cms.Sequence(globalTablesMCTask) + cms.Sequence(genWeightsTableTask) + genParticleT3mTables + lheInfoTable)
 
 def nanoAOD_customizeMuonTriggerTau3Mu(process):
