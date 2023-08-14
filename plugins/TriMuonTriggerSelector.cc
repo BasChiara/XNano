@@ -52,6 +52,7 @@ private:
   const edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> bFieldToken_;  
   edm::EDGetTokenT<std::vector<pat::Muon>> muonSrc_;
   const edm::EDGetTokenT<reco::BeamSpot> beamSpotSrc_;
+  const edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVtxSrc_;
   edm::EDGetTokenT<edm::TriggerResults> triggerBits_;
   edm::EDGetTokenT<std::vector<pat::TriggerObjectStandAlone>> triggerObjects_;
   
@@ -72,6 +73,7 @@ TriMuonTriggerSelector::TriMuonTriggerSelector(const edm::ParameterSet &iConfig)
   muonSrc_( consumes<std::vector<pat::Muon>> ( iConfig.getParameter<edm::InputTag>( "muonCollection" ) ) ),
   //
   beamSpotSrc_(consumes<reco::BeamSpot>( iConfig.getParameter<edm::InputTag>( "beamSpot" ) ) ),
+  primaryVtxSrc_(consumes<std::vector<reco::Vertex>>( iConfig.getParameter<edm::InputTag>( "primaryVtx" ) ) ),
   triggerBits_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("bits"))),
   triggerObjects_(consumes<std::vector<pat::TriggerObjectStandAlone>>(iConfig.getParameter<edm::InputTag>("objects"))),
   HLTPaths_(iConfig.getParameter<std::vector<std::string>>("HLTPaths")),
@@ -94,6 +96,10 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
   edm::Handle<reco::BeamSpot> beamSpotHandle;
   iEvent.getByToken(beamSpotSrc_, beamSpotHandle);
   const reco::BeamSpot& beamSpot = *beamSpotHandle;
+
+  edm::Handle<std::vector<reco::Vertex>> primaryVtxHandle;
+  iEvent.getByToken(primaryVtxSrc_, primaryVtxHandle);
+  const reco::Vertex &PV = primaryVtxHandle->front();
 
   edm::Handle<edm::TriggerResults> triggerBits;
   iEvent.getByToken(triggerBits_, triggerBits);
@@ -294,10 +300,8 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
     muons_out->back().addUserInt("isLoose", isLoose);    
     int isMedium = (int) muon.isMediumMuon();
     muons_out->back().addUserInt("isMedium", isMedium);    
-    //int isSoft = (int) muon.isSoftMuon(); // need a vertex (??)
-    //muons_out->back().addUserInt("isSoft", isSoft);    
-    //int isTight = (int) muon.isTightMuon();
-    //muons_out->back().addUserInt("isTight", isTight);    
+    muons_out->back().addUserInt("isSoft", muon.isSoftMuon(PV));    
+    muons_out->back().addUserInt("isTight", muon.isTightMuon(PV));    
     int isTracker = (int) muon.isTrackerMuon();
     muons_out->back().addUserInt("isTracker", isTracker); 
     muons_out->back().addUserInt("charge", muon.charge());
