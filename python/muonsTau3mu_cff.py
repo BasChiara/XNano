@@ -44,7 +44,7 @@ muonT3mTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         isGlobal = Var("userInt('isGlobal')",bool,doc="muon is global muon"),
         isLoose  = Var("userInt('isLoose')",bool,doc="muon is loose muon"),
         isMedium = Var("userInt('isMedium')",bool,doc="muon is medium muon"),
-        isSoft   = Var("passed('isSoft')",bool,doc="soft cut-based ID"), 
+        isSoft   = Var("userInt('isSoft')",bool,doc="soft cut-based ID"), 
         isTight  = Var("userInt('isTight')",bool,doc="muon is tight muon"),
         isTracker= Var("userInt('isTracker')",bool,doc="muon is tight muon"),
         
