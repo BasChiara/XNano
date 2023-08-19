@@ -4,13 +4,19 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Utilities/interface/InputTag.h"
+
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
+#include "PhysicsTools/Heppy/interface/IsolationComputer.h"
+
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
+#include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
+
+
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "TrackingTools/PatternTools/interface/ClosestApproachInRPhi.h"
 
@@ -29,6 +35,7 @@
 #include "TLorentzVector.h"
 
 #include "helper.h"
+#include "diMuonResonances.h"
 #include "KinVtxFitter.h"
 
 class TriMuonBuilder : public edm::global::EDProducer<> {
@@ -36,8 +43,8 @@ class TriMuonBuilder : public edm::global::EDProducer<> {
 public:
 
   typedef std::vector<pat::Muon> MuonCollection;
-  //typedef std::vector<pat::MET> MetCollection;
   typedef std::vector<reco::TransientTrack> TransientTrackCollection;
+  typedef std::vector<pat::PackedCandidate> PackedCandidatesCollection;
 
   explicit TriMuonBuilder(const edm::ParameterSet &cfg):
     l1_selection_{cfg.getParameter<std::string>("lep1Selection")},
@@ -47,9 +54,13 @@ public:
     post_vtx_selection_{cfg.getParameter<std::string>("postVtxSelection")},
     src_{consumes<MuonCollection>( cfg.getParameter<edm::InputTag>("src") )},
     ttracks_src_{consumes<TransientTrackCollection>( cfg.getParameter<edm::InputTag>("transientTracksSrc") )},
+    pkdCand_src_{consumes<PackedCandidatesCollection>( cfg.getParameter<edm::InputTag>("packedCandidatesSrc") )},
     met_{consumes<pat::METCollection>( cfg.getParameter<edm::InputTag>("met") )},
     PuppiMet_{consumes<pat::METCollection>( cfg.getParameter<edm::InputTag>("PuppiMet") )},
-    beamSpotSrc_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )}
+    beamSpotSrc_{consumes<reco::BeamSpot>( cfg.getParameter<edm::InputTag>("beamSpot") )},
+    isoRadius_{cfg.getParameter<double>("isoRadius")},
+    dBetaCone_{cfg.getParameter<double>("dBetaCone")},
+    dBetaValue_{cfg.getParameter<double>("dBetaValue")}
     {
       produces<pat::CompositeCandidateCollection>("SelectedTriMuons");
     }
@@ -61,6 +72,9 @@ public:
   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions) {}
   
 private:
+
+  bool  vetoResonances(edm::Event&, const std::vector<size_t>, pat::CompositeCandidate*) const; 
+
   const StringCutObjectSelector<pat::Muon> l1_selection_;    
   const StringCutObjectSelector<pat::Muon> l2_selection_;    
   const StringCutObjectSelector<pat::Muon> l3_selection_;    
@@ -68,9 +82,14 @@ private:
   const StringCutObjectSelector<pat::CompositeCandidate> post_vtx_selection_;
   const edm::EDGetTokenT<MuonCollection> src_;
   const edm::EDGetTokenT<TransientTrackCollection> ttracks_src_;
+  const edm::EDGetTokenT<PackedCandidatesCollection> pkdCand_src_;
   const edm::EDGetTokenT<pat::METCollection> met_;
   const edm::EDGetTokenT<pat::METCollection> PuppiMet_;
   const edm::EDGetTokenT<reco::BeamSpot> beamSpotSrc_;
+  const double isoRadius_;
+  const double dBetaCone_;
+  const double dBetaValue_;
+
   const bool debug = false;
 };
 
@@ -84,6 +103,10 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
   
   edm::Handle<TransientTrackCollection> ttracks;
   evt.getByToken(ttracks_src_, ttracks);
+
+  edm::Handle<PackedCandidatesCollection> pkdPFcand_hdl;
+  evt.getByToken(pkdCand_src_, pkdPFcand_hdl);
+  const PackedCandidatesCollection& pkdPFcand = *pkdPFcand_hdl;
 
   edm::Handle<pat::METCollection> Met;
   evt.getByToken(met_, Met);
@@ -146,18 +169,13 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         RefCountedKinematicVertex fitted_vtx = fitter.fitted_refvtx();
         muon_triplet.addUserInt("vtx_isValid", fitted_vtx->vertexIsValid());
         if( !post_vtx_selection_(muon_triplet) ) continue;
-        //if(!fitted_vtx->vertexIsValid()) continue;
-        
+                
         // 2nd KinVtx fit with vertex costraint
         KinematicParticleFactoryFromTransientTrack factory;
         std::vector<RefCountedKinematicParticle> particles;
         particles.emplace_back(factory.particle( ttracks->at(l1_idx), l1_ptr->mass(), 0., 0., the_MUON_SIGMA));
         particles.emplace_back(factory.particle( ttracks->at(l2_idx), l2_ptr->mass(), 0., 0., the_MUON_SIGMA));
         particles.emplace_back(factory.particle( ttracks->at(l3_idx), l3_ptr->mass(), 0., 0., the_MUON_SIGMA));
-        //std::vector<RefCountedKinematicParticle> fitted_muons = fitter.fitted_children();
-        //kinstate_muons.push_back(fitter.fitted_daughter(0));
-        //kinstate_muons.push_back(fitter.fitted_daughter(1));
-        //kinstate_muons.push_back(fitter.fitted_daughter(2));
         std::vector<KinematicState> kinstate_muons;
         kinstate_muons.push_back(particles.at(0)->currentState());
         kinstate_muons.push_back(particles.at(1)->currentState());
@@ -182,31 +200,19 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
        float Tau_mT = std::sqrt(2. * Tau_vc.Perp()* met.pt() * (1 - std::cos(Tau_vc.Phi()-met.phi())));
        float Tau_Puppi_mT = std::sqrt(2. * Tau_vc.Perp()* PuppiMet.pt() * (1 - std::cos(Tau_vc.Phi()-PuppiMet.phi())));
 
-        //// DCA between the two muons (used at HLT)
-        //float DCA = 10.;
-        //TrajectoryStateClosestToPoint mu1TS = (ttracks->at(l1_idx)).impactPointTSCP();
-        //TrajectoryStateClosestToPoint mu2TS = (ttracks->at(l2_idx)).impactPointTSCP();
-        //if (mu1TS.isValid() && mu2TS.isValid()) {
-        //    ClosestApproachInRPhi cApp;
-        //    cApp.calculate(mu1TS.theState(), mu2TS.theState());
-        //    if (cApp.status()) DCA = cApp.distance();
-        //}
-        //muon_triplet.addUserFloat("DCA", DCA); 
+       // VETO di-muon resonances 
+       bool isToVeto = vetoResonances(evt, {l1_idx,l2_idx,l3_idx}, &muon_triplet);
+       muon_triplet.addUserInt("diMuVtxFit_toVeto", isToVeto);
 
-        //// Lxy (used at HLT)  
-        //// HLTrigger/btau/plugins/HLTDisplacedmumuFilter.cc
-        //math::XYZVector pperp(l1_ptr->px() + l2_ptr->px(), l1_ptr->py() + l2_ptr->py(), 0.);
-        //GlobalError fitted_vtx_err( fitted_vtx->error().cxx(), fitted_vtx->error().cyx(), fitted_vtx->error().cyy(), fitted_vtx->error().czx(), fitted_vtx->error().czy(), fitted_vtx->error().czz() );
-        //GlobalPoint dispFromBS( -1*( (beamSpot.x0() - fitted_vtx->position().x()) + (fitted_vtx->position().z() - beamSpot.z0()) * beamSpot.dxdz()), -1*((beamSpot.y0() - fitted_vtx->position().y()) + (fitted_vtx->position().z() - beamSpot.z0()) * beamSpot.dydz()), 0);
-        //float lxy = dispFromBS.perp();
-        //float lxyerr = sqrt(fitted_vtx_err.rerr(dispFromBS));
-        //float lxySign = lxy/lxyerr;
-        //muon_triplet.addUserFloat("LxySign", lxySign); 
+      // Tau candidate ISOLATION
+      // class initiated with outer beta cone radius (NOT WORKING!!)
+      //heppy::IsolationComputer isoComputer = heppy::IsolationComputer(dBetaCone_);
+      //isoComputer.setPackedCandidates(pkdPFcand, -1, 0.2, 9999, true); // std::vector<pat::PackedCandidate>, fromPV_thresh, dz_thresh, dxy_thresh, also_leptons
+      //float ptChargedFromPV = isoComputer.chargedAbsIso(muon_triplet, isoRadius_, 0., 0.5);
+      //float ptChargedFromPU = isoComputer.puAbsIso(muon_triplet, dBetaCone_, 0., 0.5);
+      //float ptPhotons       = isoComputer.photonAbsIsoRaw(muon_triplet, dBetaCone_, 0., 0.5);
+      //float TauAbsIsolation = ptChargedFromPV + std::max(0., ptPhotons - dBetaValue_*ptChargedFromPU);
 
-        //// CosAlpha (used at HLT)  
-        //reco::Vertex::Point vperp(dispFromBS.x(),dispFromBS.y(),0.);
-        //float cosAlpha = vperp.Dot(pperp)/(vperp.R()*pperp.R());
-        //muon_triplet.addUserFloat("cosAlpha", cosAlpha); 
 
         // 1st KIN FIT WITHOUT VTX COSTRAINT
         //   Tau infos after 1st fit
@@ -236,6 +242,12 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         muon_triplet.addUserFloat("PuppiMET_pt", PuppiMet.pt()); 
         muon_triplet.addUserFloat("Puppi_mT", Tau_Puppi_mT); 
         muon_triplet.addUserInt("PuppiMET_isPf", PuppiMet.isPFMET()); 
+
+        // ISOLATION info
+        //muon_triplet.addUserFloat("iso_ptChargedFromPV", ptChargedFromPV);
+        //muon_triplet.addUserFloat("iso_ptChargedFromPU", ptChargedFromPU);
+        //muon_triplet.addUserFloat("iso_ptPhotons", ptPhotons);
+        //muon_triplet.addUserFloat("AbsIsolation",TauAbsIsolation);
         
 
         // save further quantities, to be saved in the final ntuples: muons before fit
@@ -284,6 +296,67 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
   evt.put(std::move(ret_value),  "SelectedTriMuons");
 }
+
+
+bool TriMuonBuilder::vetoResonances(edm::Event& iEvt, const std::vector<size_t> tauMu_idcs, pat::CompositeCandidate* tau_cand) const {
+
+    bool isMatchingResonance = false; 
+    bool debug = false;
+    if (tauMu_idcs.size() != 3){
+      std::cout << "ERROR in TriMuonBuilder::vetoResonances() : Tau-cand must be made of exactly 3 muons" << std::endl;
+      return -1;
+    }
+    edm::Handle<MuonCollection> all_muons;
+    iEvt.getByToken(src_, all_muons);
+    edm::Handle<TransientTrackCollection> all_muTtracks;
+    iEvt.getByToken(ttracks_src_, all_muTtracks);
+
+    const float fitProb_min = 0.05;
+    float best_prob = -1., best_mass = 0.;
+
+    for(size_t mu_idx = 0; mu_idx < all_muons->size(); ++mu_idx) {
+      // not in the tau candidate
+      if ( std::find(tauMu_idcs.begin(), tauMu_idcs.end(), mu_idx) != tauMu_idcs.end()){
+        if(debug) std::cout << "  Skip muon " << mu_idx << std::endl;
+        continue;
+      }
+      edm::Ptr<pat::Muon> mu(all_muons, mu_idx);
+      for(size_t Tmu_idx = 0; Tmu_idx < 3; ++Tmu_idx){
+          edm::Ptr<pat::Muon> TauMu(all_muons, tauMu_idcs[Tmu_idx]);
+          // opposite charge
+          if((TauMu->charge() + mu->charge()) != 0) continue;
+          std::cout << " Veto resonance mu_tau" << tauMu_idcs[Tmu_idx] <<" + mu_" << mu_idx << std::endl;
+          // fit
+          KinVtxFitter fitter(
+                  {all_muTtracks->at(tauMu_idcs[Tmu_idx]), all_muTtracks->at(mu_idx)},
+                  {TauMu->mass(), mu->mass()},
+                  {LEP_SIGMA, LEP_SIGMA} //some small sigma for the particle mass
+                  );
+          if ( !fitter.success() ) continue;
+          if(debug) std::cout << " Fit-done : fit prob = "<< fitter.prob() << " di-muon mass = " << fitter.fitted_candidate().mass() << std::endl; 
+          // require good di-muon vertex (prob > 5%)
+          if(fitter.prob() < fitProb_min) continue;
+          float fitMass = fitter.fitted_candidate().mass();
+          if(fitter.prob() > best_prob){
+            best_prob = fitter.prob();
+            best_mass = fitMass;
+          }
+          // check if compatibility with di-muon resonances 
+          if(debug) std::cout << " checking for matching resonance..." << std::endl;
+          for(std::vector< std::pair<float, float> >::iterator reso = resonancesToVeto.begin(); reso != resonancesToVeto.end(); ++reso){
+            if( fabs( (fitMass - reso->first)/reso->second)  < SIGMA_TO_EXCLUDE ){
+               std::cout << " matching found " << fabs( (fitMass - reso->first)/reso->second) << std::endl; 
+               isMatchingResonance = true;
+            }
+          }// loop on known di-muon resonances  
+      }// loop on mu in Tau cand 
+    }// loop on mu outside the triplet
+    tau_cand->addUserFloat("diMuVtxFit_bestProb", best_prob);
+    tau_cand->addUserFloat("diMuVtxFit_bestMass", best_mass);
+    return isMatchingResonance;
+
+}//vetoResonances({
+
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 DEFINE_FWK_MODULE(TriMuonBuilder);
