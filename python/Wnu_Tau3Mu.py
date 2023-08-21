@@ -74,6 +74,11 @@ Tau3MuTable = cms.EDProducer(
         diMuVtxFit_bestMass = ufloat("diMuVtxFit_bestMass"),
         diMuVtxFit_toVeto   = uint("diMuVtxFit_toVeto"),
 
+        iso_ptChargedFromPV = ufloat("iso_ptChargedFromPV"),
+        iso_ptChargedFromPU = ufloat("iso_ptChargedFromPU"),
+        iso_ptPhotons       = ufloat("iso_ptPhotons"),
+        absIsolation        = ufloat("absIsolation"),
+
         mu1_pt = ufloat("mu1_pt"),
         mu1_eta = ufloat("mu1_eta"),
         mu1_phi = ufloat("mu1_phi"),

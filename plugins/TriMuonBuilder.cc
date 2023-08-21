@@ -7,7 +7,7 @@
 
 #include "CommonTools/Utils/interface/StringCutObjectSelector.h"
 #include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
-#include "PhysicsTools/Heppy/interface/IsolationComputer.h"
+#include "../interface/IsolationComputer.h"
 
 #include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
 #include "DataFormats/Math/interface/deltaR.h"
@@ -106,7 +106,7 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 
   edm::Handle<PackedCandidatesCollection> pkdPFcand_hdl;
   evt.getByToken(pkdCand_src_, pkdPFcand_hdl);
-  const PackedCandidatesCollection& pkdPFcand = *pkdPFcand_hdl;
+  //const PackedCandidatesCollection& pkdPFcand = *pkdPFcand_hdl;
 
   edm::Handle<pat::METCollection> Met;
   evt.getByToken(met_, Met);
@@ -137,6 +137,7 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         if(!l3_selection_(*l3_ptr)) continue;
         if(l3_idx == l1_idx || l3_idx == l2_idx) continue; // Muons must be different
 
+        // tau candidate : set the kinematics and its daughters
         pat::CompositeCandidate muon_triplet;
         muon_triplet.setP4(l1_ptr->p4() + l2_ptr->p4() + l3_ptr->p4());
         muon_triplet.setCharge(l1_ptr->charge() + l2_ptr->charge() + l3_ptr->charge());
@@ -205,13 +206,19 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
        muon_triplet.addUserInt("diMuVtxFit_toVeto", isToVeto);
 
       // Tau candidate ISOLATION
+      // custom class ... to check carefully
+      IsolationComputer isoComputer = IsolationComputer(pkdPFcand_hdl, isoRadius_, 0.2, dBetaCone_);
+      isoComputer.addMuonsToVeto({l1_ptr, l2_ptr, l3_ptr});
+      float ptChargedFromPV = isoComputer.pTcharged_iso(muon_triplet);
+      float ptChargedFromPU = isoComputer.pTcharged_PU(muon_triplet);
+      float ptPhotons = isoComputer.pTphoton(muon_triplet);
       // class initiated with outer beta cone radius (NOT WORKING!!)
       //heppy::IsolationComputer isoComputer = heppy::IsolationComputer(dBetaCone_);
       //isoComputer.setPackedCandidates(pkdPFcand, -1, 0.2, 9999, true); // std::vector<pat::PackedCandidate>, fromPV_thresh, dz_thresh, dxy_thresh, also_leptons
       //float ptChargedFromPV = isoComputer.chargedAbsIso(muon_triplet, isoRadius_, 0., 0.5);
       //float ptChargedFromPU = isoComputer.puAbsIso(muon_triplet, dBetaCone_, 0., 0.5);
       //float ptPhotons       = isoComputer.photonAbsIsoRaw(muon_triplet, dBetaCone_, 0., 0.5);
-      //float TauAbsIsolation = ptChargedFromPV + std::max(0., ptPhotons - dBetaValue_*ptChargedFromPU);
+      float TauAbsIsolation = ptChargedFromPV + std::max(0., ptPhotons - dBetaValue_*ptChargedFromPU);
 
 
         // 1st KIN FIT WITHOUT VTX COSTRAINT
@@ -244,11 +251,11 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         muon_triplet.addUserInt("PuppiMET_isPf", PuppiMet.isPFMET()); 
 
         // ISOLATION info
-        //muon_triplet.addUserFloat("iso_ptChargedFromPV", ptChargedFromPV);
-        //muon_triplet.addUserFloat("iso_ptChargedFromPU", ptChargedFromPU);
-        //muon_triplet.addUserFloat("iso_ptPhotons", ptPhotons);
-        //muon_triplet.addUserFloat("AbsIsolation",TauAbsIsolation);
-        
+        muon_triplet.addUserFloat("iso_ptChargedFromPV", ptChargedFromPV);
+        muon_triplet.addUserFloat("iso_ptChargedFromPU", ptChargedFromPU);
+        muon_triplet.addUserFloat("iso_ptPhotons", ptPhotons);
+        muon_triplet.addUserFloat("absIsolation",TauAbsIsolation);
+      
 
         // save further quantities, to be saved in the final ntuples: muons before fit
         // Muons post fit are saved only after the very final B fit
@@ -325,7 +332,7 @@ bool TriMuonBuilder::vetoResonances(edm::Event& iEvt, const std::vector<size_t> 
           edm::Ptr<pat::Muon> TauMu(all_muons, tauMu_idcs[Tmu_idx]);
           // opposite charge
           if((TauMu->charge() + mu->charge()) != 0) continue;
-          std::cout << " Veto resonance mu_tau" << tauMu_idcs[Tmu_idx] <<" + mu_" << mu_idx << std::endl;
+          if(debug) std::cout << " Veto resonance mu_tau" << tauMu_idcs[Tmu_idx] <<" + mu_" << mu_idx << std::endl;
           // fit
           KinVtxFitter fitter(
                   {all_muTtracks->at(tauMu_idcs[Tmu_idx]), all_muTtracks->at(mu_idx)},
