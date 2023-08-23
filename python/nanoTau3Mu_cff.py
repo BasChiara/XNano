@@ -45,7 +45,7 @@ def nanoAOD_customizeTriggerBitsTau3Mu(process):
 
 def nanoAOD_customizeWnuTau3Mu(process):
     #process.nanoB0ToK0XSequence = cms.Sequence( Tau3MuSequence + Tau3MuTableSequence )
-    process.nanoWnuTau3MuSequence = cms.Sequence( Tau3MuSequence + Tau3MuTableSequence )
+    process.nanoWnuTau3MuSequence = cms.Sequence( Tau3MuSequence + Tau3MuTableSequence + TauPlusMetSequence + TauPlusMetTableSequence)
     return process
 
 
