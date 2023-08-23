@@ -77,7 +77,7 @@ double IsolationComputer::pTcharged_PU(const reco::Candidate& tau_cand) const{
 double IsolationComputer::pTphoton(const reco::Candidate& tau_cand) const{
     double sum_pTphoton = 0;
     for (IT iGamma = neutral_.begin(); iGamma != neutral_.end(); ++iGamma){
-        if( (*iGamma)->pdgId() != 22 || (*iGamma)->pt() < pT_treshold_ || reco::deltaR(**iGamma, tau_cand) > dBetaCone_) continue;
+        if( (*iGamma)->pdgId() != 22 || (*iGamma)->pt() < pT_treshold_ || reco::deltaR(**iGamma, tau_cand) > isoRadius_) continue;
         sum_pTphoton += (*iGamma)->pt();
     }
     //std::cout << " = gamma pT = " << sum_pTphoton << std::endl;
