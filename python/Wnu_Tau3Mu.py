@@ -22,19 +22,20 @@ muonTripletForTau3Mu = cms.EDProducer('TriMuonBuilder',
     isoRadius = cms.double(0.4), # dR of the isolation cone
     dBetaCone = cms.double(0.8),
     dBetaValue = cms.double(0.2), # optimised for Run2... check validity for Run3
-
-    #preVtxSelection = cms.string('abs(userCand("l1").vz - userCand("l2").vz) <= 1. && mass() < 5 '
-    #                             '&& mass() > 1 && charge() == 0 && userFloat("lep_deltaR") > 0.02'),
-    #postVtxSelection =  cms.string('userFloat("sv_prob") > 0.01'
-    #                             '&& userFloat("fitted_mass") > 2.50 && userFloat("fitted_mass") < 4.00'),
 )
 
+# W -> Tau + MET
+
+METforWnuTau3Mu = cms.EDProducer('TauPlusMETBuilder',
+    src = cms.InputTag('muonTripletForTau3Mu', 'SelectedTriMuons'),
+    met = cms.InputTag('slimmedMETs'),
+    PuppiMet = cms.InputTag('slimmedMETsPuppi'),
+)
 
 
 ################################### Tables #####################################
 
-Tau3MuTable = cms.EDProducer(
-   'SimpleCompositeCandidateFlatTableProducer',
+Tau3MuTable = cms.EDProducer('SimpleCompositeCandidateFlatTableProducer',
     src = cms.InputTag('muonTripletForTau3Mu', 'SelectedTriMuons'),
     cut = cms.string(""),
     name = cms.string("TauTo3Mu"),
@@ -51,6 +52,8 @@ Tau3MuTable = cms.EDProducer(
         mu3_charge = uint("mu3_charge"),
 
         vtx_prob = ufloat("vtx_prob"),
+        vtx_chi2 = ufloat("vtx_chi2"),
+        vtx_Ndof = ufloat("vtx_Ndof"),
         vtx_isValid = uint("vtx_isValid"),
 
         fitted_wovc_pt   = ufloat('fitted_wovc_pt'),
@@ -78,6 +81,12 @@ Tau3MuTable = cms.EDProducer(
         iso_ptChargedFromPU = ufloat("iso_ptChargedFromPU"),
         iso_ptPhotons       = ufloat("iso_ptPhotons"),
         absIsolation        = ufloat("absIsolation"),
+
+        dZmu12 = ufloat('dZmu12'),
+        dZmu13 = ufloat('dZmu13'),
+        dZmu23 = ufloat('dZmu23'),
+        sigLxy_3muVtxBS = ufloat('sigLxy_3muVtxBS'),
+        CosAlpha2D_LxyP3mu = ufloat('Cos2D_LxyP3mu'),
 
         mu1_pt = ufloat("mu1_pt"),
         mu1_eta = ufloat("mu1_eta"),
@@ -109,6 +118,32 @@ Tau3MuTable = cms.EDProducer(
     )
 )
 
+TauPlusMetTable = cms.EDProducer('SimpleCompositeCandidateFlatTableProducer',
+    src = cms.InputTag('METforWnuTau3Mu', 'builtWbosons'),
+    cut = cms.string(""),
+    name = cms.string("TauPlusMET"),
+    doc = cms.string("Tau+MET Variables"),
+    singleton=cms.bool(False),
+    extension=cms.bool(False),
+    variables=cms.PSet(
+        charge = uint("charge"),
+
+        pt     = ufloat("pt"),
+        eta    = ufloat("eta"),
+        phi    = ufloat("phi"),
+        mass   = ufloat("mass"),
+        METminPz = ufloat('METminPz'),
+        METmaxPz = ufloat('METmaxPz'),
+        # Puppi correction to MET
+        Puppi_pt     = ufloat("Puppi_pt"),
+        Puppi_eta    = ufloat("Puppi_eta"),
+        Puppi_phi    = ufloat("Puppi_phi"),
+        PuppiMETminPz= ufloat('PuppiMETminPz'),
+        PuppiMETmaxPz= ufloat('PuppiMETmaxPz'),
+
+    
+    )
+)
 
 CountMuonTriplets = cms.EDFilter("PATCandViewCountFilter",
     minNumber = cms.uint32(1),
@@ -123,3 +158,6 @@ Tau3MuSequence = cms.Sequence(
 )
 
 Tau3MuTableSequence = cms.Sequence( Tau3MuTable )
+
+TauPlusMetSequence = cms.Sequence( METforWnuTau3Mu )
+TauPlusMetTableSequence = cms.Sequence( TauPlusMetTable )
