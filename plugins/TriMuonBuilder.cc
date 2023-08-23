@@ -165,6 +165,8 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         if ( !fitter.success() ) continue;
         // save intermediate quantities after 1st fit needed for selection and to be saved in the final ntuples
         muon_triplet.addUserFloat("vtx_prob", fitter.prob());
+        muon_triplet.addUserFloat("vtx_chi2", fitter.chi2());
+        muon_triplet.addUserFloat("vtx_Ndof", fitter.dof());
         KinematicState fitted_cand = fitter.fitted_candidate();
         muon_triplet.addUserFloat("fitted_wovc_mass", fitter.success() ? fitted_cand.mass() : -1);
         RefCountedKinematicVertex fitted_vtx = fitter.fitted_refvtx();
@@ -195,9 +197,28 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
 			                      refitted_cand.globalMomentum().eta(),
 			                      refitted_cand.globalMomentum().phi(),
 			                      refitted_cand.mass());
+        // Lxy BS - 3mu-vtx
+        // from : https://cmssdt.cern.ch/lxr/source/HLTrigger/btau/plugins/HLTDisplacedmumuFilter.cc
+        GlobalPoint fittedVtxPoint(fitted_vtx->position().x(), fitted_vtx->position().y(), fitted_vtx->position().z());
+        GlobalError fittedVtxError( fitted_vtx->error().cxx(), 
+                                    fitted_vtx->error().cyx(), fitted_vtx->error().cyy(), 
+                                    fitted_vtx->error().czx(), fitted_vtx->error().czy(), fitted_vtx->error().czz()); 
+        //GlobalError fittedVtxError = 
+        GlobalPoint displacementfitVtxBS( -1.*((beamSpot.x0() - fittedVtxPoint.x()) + (fittedVtxPoint.z() - beamSpot.z0()) * beamSpot.dxdz()), 
+                                          -1.*((beamSpot.y0() - fittedVtxPoint.y()) + (fittedVtxPoint.z() - beamSpot.z0()) * beamSpot.dydz()),
+                                          0.0 );
+        float Lxy_3muVtxBS = displacementfitVtxBS.perp();
+        float errLxy_3muVtxBS = std::sqrt(fittedVtxError.rerr(displacementfitVtxBS));
+        float sigLxy_3muVtxBS = Lxy_3muVtxBS/errLxy_3muVtxBS;
+
+        // CosAlpha2D( Lxy(BS-3muV) ; P_3mu)
+        math::XYZVector TauCand_refittedP3(Tau_vc.Px(), Tau_vc.Py(), 0 );
+        reco::Vertex::Point dist2D_3muVtxBS(displacementfitVtxBS.x(), displacementfitVtxBS.y(), 0.);
+        float CosAlpha2D_LxyP3mu = dist2D_3muVtxBS.Dot(TauCand_refittedP3)/(dist2D_3muVtxBS.R()*TauCand_refittedP3.R());
+      
 
 
-       // transverse mass
+       // TRANSVERSE MASS
        float Tau_mT = std::sqrt(2. * Tau_vc.Perp()* met.pt() * (1 - std::cos(Tau_vc.Phi()-met.phi())));
        float Tau_Puppi_mT = std::sqrt(2. * Tau_vc.Perp()* PuppiMet.pt() * (1 - std::cos(Tau_vc.Phi()-PuppiMet.phi())));
 
@@ -220,12 +241,17 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
       //float ptPhotons       = isoComputer.photonAbsIsoRaw(muon_triplet, dBetaCone_, 0., 0.5);
       float TauAbsIsolation = ptChargedFromPV + std::max(0., ptPhotons - dBetaValue_*ptChargedFromPU);
 
+      // useful quantities for BDT
+      // muons longitudinal distance
+      float dz_mu12 = ( (l1_ptr->hasUserFloat("dZpv") && l2_ptr->hasUserFloat("dZpv")) ? fabs(l1_ptr->userFloat("dZpv") - l2_ptr->userFloat("dZpv")) : -1 );
+      float dz_mu13 = ( (l1_ptr->hasUserFloat("dZpv") && l3_ptr->hasUserFloat("dZpv")) ? fabs(l1_ptr->userFloat("dZpv") - l3_ptr->userFloat("dZpv")) : -1 );
+      float dz_mu23 = ( (l2_ptr->hasUserFloat("dZpv") && l3_ptr->hasUserFloat("dZpv")) ? fabs(l2_ptr->userFloat("dZpv") - l3_ptr->userFloat("dZpv")) : -1 );
 
         // 1st KIN FIT WITHOUT VTX COSTRAINT
         //   Tau infos after 1st fit
         TVector3 Tau_wovc(fitted_cand.globalMomentum().x(),
-                fitted_cand.globalMomentum().y(),
-                fitted_cand.globalMomentum().z());
+                          fitted_cand.globalMomentum().y(),
+                          fitted_cand.globalMomentum().z());
         muon_triplet.addUserFloat("fitted_wovc_pt",  Tau_wovc.Pt());
         muon_triplet.addUserFloat("fitted_wovc_eta", Tau_wovc.Eta());
         muon_triplet.addUserFloat("fitted_wovc_phi", Tau_wovc.Phi());
@@ -255,6 +281,13 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         muon_triplet.addUserFloat("iso_ptChargedFromPU", ptChargedFromPU);
         muon_triplet.addUserFloat("iso_ptPhotons", ptPhotons);
         muon_triplet.addUserFloat("absIsolation",TauAbsIsolation);
+
+        // useful quantities for BDT
+        muon_triplet.addUserFloat("dZmu12", dz_mu12); 
+        muon_triplet.addUserFloat("dZmu13", dz_mu13);
+        muon_triplet.addUserFloat("dZmu23", dz_mu23);
+        muon_triplet.addUserFloat("sigLxy_3muVtxBS", sigLxy_3muVtxBS);
+        muon_triplet.addUserFloat("Cos2D_LxyP3mu",CosAlpha2D_LxyP3mu),
       
 
         // save further quantities, to be saved in the final ntuples: muons before fit
@@ -291,9 +324,6 @@ void TriMuonBuilder::produce(edm::StreamID, edm::Event &evt, edm::EventSetup con
         muon_triplet.addUserInt("mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1", l3_ptr->userInt("HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1"));
         muon_triplet.addUserInt("mu3_fired_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15", l3_ptr->userInt("HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15"));
         muon_triplet.addUserInt("mu3_fired_DoubleMu4_3_LowMass", l3_ptr->userInt("HLT_DoubleMu4_3_LowMass"));
-
-        //muon_triplet.addUserFloat("mu1_dr_Dimuon25_Jpsi",        l1_ptr->userFloat("HLT_Dimuon25_Jpsi_dr"));
-        //muon_triplet.addUserFloat("mu2_dr_Dimuon25_Jpsi",        l2_ptr->userFloat("HLT_Dimuon25_Jpsi_dr"));
         
         // push in the event
         ret_value->push_back(muon_triplet);
