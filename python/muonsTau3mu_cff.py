@@ -1,5 +1,5 @@
 import FWCore.ParameterSet.Config as cms
-from PhysicsTools.NanoAOD.common_cff import *
+from PhysicsTools.XNano.common_cff import *
 #from HLTpathsT3m_cff import Path_Tau3Mu2022 
 
 Path2022=["HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1","HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15","HLT_DoubleMu4_3_LowMass"]
@@ -50,6 +50,8 @@ muonT3mTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
         
         charge = Var("userInt('charge')",int,doc="charge"),
         trackQuality = Var("userInt('trackQuality')",int,doc="trackQuality"),
+        dZpv = Var("userFloat('dZpv')",float,doc="long distance from PV"),
+        err_dZpv = Var("userFloat('err_dZpv')",float,doc="long error from PV"),
     ),
 )
 

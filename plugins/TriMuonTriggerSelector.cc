@@ -103,7 +103,8 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
 
   edm::Handle<edm::TriggerResults> triggerBits;
   iEvent.getByToken(triggerBits_, triggerBits);
-  
+  const edm::TriggerNames &trigNames = iEvent.triggerNames(*triggerBits); 
+
   edm::Handle<std::vector<pat::TriggerObjectStandAlone>> triggerObjects;
   iEvent.getByToken(triggerObjects_, triggerObjects);
 
@@ -121,56 +122,22 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
   std::vector<std::vector<float>> DR;
   
 
-  // ----------------------------------------------------------
-  // debug
-  /*
-  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
-  std::cout << std::endl;
-  std::cout << std::endl;
-  std::cout << "-----------------------------------------------" << std::endl;
-  std::cout << std::endl;
-  std::cout << "\n == TRIGGER PATHS= " << std::endl;
-  for (unsigned int i = 0, n = triggerBits->size(); i < n; ++i) {
-    if (triggerBits->accept(i)) 
-      std::cout << "Trigger " << names.triggerName(i) 
-		<< ": Pass = " << (triggerBits->accept(i)) 
-		<< ", Was Run = " << (triggerBits->wasrun(i))
-		<< std::endl;
-  }
-
-  
-  std::cout << std::endl;
-  std::cout << "\n TRIGGER OBJECTS " << std::endl;
-  for (pat::TriggerObjectStandAlone obj : *triggerObjects) { 
-    obj.unpackPathNames(names);
-    std::cout << "\tTrigger object:  pt " << obj.pt() << ", eta " << obj.eta() << ", phi " << obj.phi() << std::endl;
-    // Print trigger object collection and type
-    std::cout << "\t   Collection: " << obj.collection() << std::endl;
-    std::cout << "\t   Type IDs:   ";
+  // Trigger debug
+  if(debug) {
+    const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
     std::cout << std::endl;
-    std::vector<string> pathNamesAll  = obj.pathNames(false);
-    std::vector<string> pathNamesLast = obj.pathNames(true);
-    // Print all trigger paths, for each one record also if the object is associated to a 'l3' filter (always true for the
-    // definition used in the PAT trigger producer) and if it's associated to the last filter of a successfull path (which
-    // means that this object did cause this trigger to succeed; however, it doesn't work on some multi-object triggers)
-    std::cout << "\t   Paths (" << pathNamesAll.size()<<"/"<<pathNamesLast.size()<<"):    ";
-    for (unsigned h = 0, n = pathNamesAll.size(); h < n; ++h) {
-      bool isBoth = obj.hasPathName( pathNamesAll[h], true, true );
-      bool isL3   = obj.hasPathName( pathNamesAll[h], false, true );      //false = last; true = L3 accepted ==> isL3 always true
-      bool isLF   = obj.hasPathName( pathNamesAll[h], true, false );
-      bool isNone = obj.hasPathName( pathNamesAll[h], false, false );
-      std::cout << "   " << pathNamesAll[h];
-      if (isBoth) std::cout << "(L,3)";
-      if (isL3 && !isBoth) std::cout << "(*,3)";
-      if (isLF && !isBoth) std::cout << "(L,*)";
-      if (isNone && !isBoth && !isL3 && !isLF) std::cout << "(*,*)";
+    std::cout << std::endl;
+    std::cout << "-----------------------------------------------" << std::endl;
+    std::cout << std::endl;
+    std::cout << "\n == TRIGGER PATHS= " << std::endl;
+    for (unsigned int i = 0, n = triggerBits->size(); i < n; ++i) {
+      if (triggerBits->accept(i)) 
+	std::cout << "Event = " << (iEvent.id()).event() << ", Trigger " << names.triggerName(i) 
+		  << ": Pass = " << (triggerBits->accept(i)) 
+		  << ", Was Run = " << (triggerBits->wasrun(i))
+		  << std::endl;
     }
-    std::cout << std::endl;
-    }*/
-  // debug end
-  
-  // ----------------------------------------------------------
-
+  }
 
   // Loop over reconstructed muons
   for(const pat::Muon &muon : *muons){
@@ -188,86 +155,144 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
     for (const std::string path: HLTPaths_){
       
       if(debug) std::cout << "ipath = " << ipath << ", path = " << path << std::endl;
+      if(debug) std::cout << std::endl;
       ipath++;
       
       // Here we loop over trigger objects
       float minDr = 1000.;
       float minPt = 1000.;
+
+      if(debug) std::cout << std::endl;
+      if(debug) std::cout << "Now start loop over trigger objects" << std::endl;
+
+      // Loop over trigger objects matching the reference path
+      for (pat::TriggerObjectStandAlone obj : *triggerObjects) {
       
-      const edm::TriggerNames &triggerNames = iEvent.triggerNames(*triggerBits);
-      for (pat::TriggerObjectStandAlone obj : *triggerObjects) { 
-          obj.unpackPathNames(triggerNames);
-          if(debug) std::cout << "\tTrigger object:  pt " << obj.pt() << ", eta " << obj.eta() << ", phi " << obj.phi() << std::endl;
+	if(debug) std::cout << "New object" << std::endl;
 
-          // Is this HLT object matching the muon? 
-          bool hltMatchOffline = false;
-          TVector3 p3triggerObj;
-          p3triggerObj.SetPtEtaPhi(obj.pt(), obj.eta(), obj.phi());  
-          TVector3 p3Muon;                                           
-          p3Muon.SetPtEtaPhi(muon.pt(), muon.eta(), muon.phi());    
-          float dr = p3triggerObj.DeltaR(p3Muon);
-          if (dr<drForTriggerMatch_) hltMatchOffline = true;
+	// consider only objects which match the ref path    
+	obj.unpackPathNames(trigNames);
+	obj.unpackFilterLabels(iEvent, *triggerBits);
+	std::vector<std::string> pathNamesAll  = obj.pathNames(false);
+	bool isPathExist = false;
+	for (unsigned h = 0, n = pathNamesAll.size(); h < n; ++h) {
 
-          // Is this HLT object matching this path?
-          bool hltMatchThisPath = false;
-          if (hltMatchOffline==true) { 
-              char cstr[ (path+"*").size() + 1]; 
-              strcpy( cstr, (path+"*").c_str() ); 
-              bool isBoth = obj.hasPathName( cstr, true, true );
-              if (isBoth) {
-                  if(debug)  std::cout << "Matching path " << path << std::endl;;
-                  hltMatchThisPath = true;
-              }
-          }
+	  // remove the path version
+	  string pathNameStart;
+	  pathNameStart = pathNamesAll[h].substr(0,pathNamesAll[h].find("_v")-0);
+	  if(debug) std::cout << "In loop over trigger object: this is ipath = " << pathNamesAll[h] << ", I need path = " << path << std::endl;	  
+	  if(pathNameStart==path) isPathExist = true;     
+	}
+	if(!isPathExist) continue;
+      
+	if(debug) std::cout << "Path found" << std::endl;	  
 
-          // Look for minDR between reco muon and matched HLT object for this path
-          if (hltMatchThisPath==true && hltMatchOffline==true) {
-              frs[ipath]=1;
-              if (dr<minDr) {
-                  minDr = dr;
-                  minPt = obj.pt();
-              }
-          }
-	
-      } // Loop over trigger objects
+	// muObjNumberGM: hlt candidate firing the dimuon part of the trigger, requiring global muons
+	// muObjNumberTM: hlt candidate firing the request for tracker muons
+	int muObjNumberGM = -1;
+	int muObjNumberTM = -1;
+	int muObjNumberUniv = -1;
+	for (unsigned hh = 0; hh < obj.filterLabels().size(); ++hh){	
+
+	  if(debug) std::cout << "Event: Filter " << hh << " => " << obj.filterLabels()[hh] << ": pt =  " << obj.pt() << ", eta = " << obj.eta() << ", phi = " << obj.phi() << std::endl;
+	  if(debug) std::cout << "" << std::endl;	  
+	  
+	  if (path=="HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15_Charge1" || path=="HLT_Tau3Mu_Mu7_Mu1_TkMu1_IsoTau15") {
+	    if(obj.filterLabels()[hh].find("hltTau3MuTriMuon1filter") != std::string::npos) {  
+	      muObjNumberTM = hh;
+	    }
+	    if(obj.filterLabels()[hh].find("hltDiMuonForTau3MuDzFiltered0p3") != std::string::npos) {  
+	      muObjNumberGM = hh;
+	    }
+	  }
+	  if (path=="HLT_DoubleMu4_3_LowMass") {
+	    if(obj.filterLabels()[hh].find("hltDoubleMu43LowMassL3Filtered") != std::string::npos) {  
+	      muObjNumberUniv = hh;
+	    }
+	  }
+	}
+	if(debug && muObjNumberTM>=0) std::cout << "Loop over filters done, my TM filter found" << std::endl;
+	if(debug && muObjNumberGM>=0) std::cout << "Loop over filters done, my GM filter found" << std::endl;
+	if(debug && muObjNumberUniv>=0) std::cout << "Loop over filters done, my Univ filter found" << std::endl;
+	if(debug && muObjNumberGM<0 && muObjNumberTM<0 && muObjNumberUniv<0) std::cout << "Loop over filters done, my filters NOT found" << std::endl;
+      
+	// here HLT obj vs reco muon candidates
+	TVector3 muTV3, objTV3;
+	muTV3.SetPtEtaPhi( muon.pt(), muon.eta(), muon.phi() );
+	objTV3.SetPtEtaPhi( obj.pt(), obj.eta(), obj.phi() );
+	Float_t deltaR = fabs(muTV3.DeltaR(objTV3));
     
+	// here HLT-muon candidates
+	if (muObjNumberTM>=0 || muObjNumberGM>=0 || muObjNumberUniv>=0) {  
+	  if(debug) std::cout<< "DeltaR = " << deltaR << std::endl;
+	  if(debug) std::cout << "This is a muon HLT candidate" << endl;
+	  if(deltaR < drForTriggerMatch_){    
+	    frs[ipath]=1;    
+	    if (deltaR < minDr){
+	      minDr = deltaR;
+	      minPt = obj.pt(); 
+	    }
+	    if(debug) std::cout << "This object is matched with muon: minDr = " << minDr << std::endl;
+	    if(debug) std::cout << "Offline: " << muon.pt() << " " << muon.eta() << " " << muon.phi() << std::endl;
+	    if(debug) std::cout << "HLT: " << obj.pt() << " " << obj.eta() << " " << obj.phi() << std::endl;
+	    if(debug) std::cout << muObjNumberTM << " " << muObjNumberGM << " " << muObjNumberUniv << std::endl;
+	  }
+	}
+	
+      } // Loop over trigger object
+
       // Here we store the minimum between reco muon and all its matched HLT objects for this HLT path
       temp_DR[ipath]=minDr;
       temp_matched_to[ipath]=minPt;
       
-    } // Loop over paths
-    
-    // One vector per muon. Each vector : one element per path (corresponding to the closest HLT object
+    } // Loop over HLT paths
+
+    // One vector per muon. Each vector : one element per path, corresponding to the closest HLT object
     fires.push_back(frs);                 // This is used in order to see if a reco muon fired a Trigger (1) or not (0).
-    matcher.push_back(temp_matched_to);   // PT of the reco muon matched to HLT object
-    DR.push_back(temp_DR);
+    matcher.push_back(temp_matched_to);   // PT of the HLT object matched to the reco muon
+    DR.push_back(temp_DR);                // Minimum dR between online and offline
+
+    if(debug) {
+      std::cout << std::endl;
+      std::cout << "Summary for this reco muon: " << std::endl;
+      int size1 = frs.size();
+      int size2 = temp_matched_to.size();
+      int size3 = temp_DR.size();
+      if (size1!=size2 || size1!=size3) 
+	std::cout << "problem with size: " << size1 << " " << size2 << " " << size3 << std::endl;
+      else {
+	std::cout << "size ok: " << size1 << std::endl;	
+	for (int jj=0; jj<size1; jj++) std::cout << "fired = " << frs[jj] 
+						 << ", pT HLT obj = " << temp_matched_to[jj] 
+						 << ", pT RECO obj = " << muon.pt()
+						 << ", dR = " << temp_DR[jj] << std::endl;
+      }					 
+    } // debug
     
   } // Loop over reco muons
 
+  if(debug) std::cout << std::endl;
 
   // Now check for different reco muons that are matched to the same HLTObject.
   for(unsigned int path=0; path<HLTPaths_.size(); path++){
     for(unsigned int iMuo=0; iMuo<muons->size(); iMuo++){
       for(unsigned int im=(iMuo+1); im<muons->size(); im++){
-          if(matcher[iMuo][path]!=1000. && matcher[iMuo][path]==matcher[im][path]){ 
-              if(DR[iMuo][path]<DR[im][path]){     // Keep the one that has the minimum DR with the HLT object
-                  fires[im][path]=0;
-                  matcher[im][path]=1000.;
-                  DR[im][path]=1000.;                       
-              }
-              else{
-                  fires[iMuo][path]=0;
-                  matcher[iMuo][path]=1000.;
-                  DR[iMuo][path]=1000.;                       
-              }
-          }              
+	if(matcher[iMuo][path]!=1000. && matcher[iMuo][path]==matcher[im][path]){ 
+	  if(DR[iMuo][path]<DR[im][path]){     // Keep the one that has the minimum DR with the HLT object
+	    fires[im][path]=0;
+	    matcher[im][path]=1000.;
+	    DR[im][path]=1000.;                       
+	  }
+	  else{
+	    fires[iMuo][path]=0;
+	    matcher[iMuo][path]=1000.;
+	    DR[iMuo][path]=1000.;                       
+	  }
+	}              
       }
       if(matcher[iMuo][path]!=1000.) muonIsTrigger[iMuo]=1;
     }
   }
-  // 
-
-  if(debug) std::cout << "number of Muons=" <<muons->size() << endl;
 
   // Create a collection with all trg muons
   for(const pat::Muon & muon : *muons){
@@ -301,7 +326,7 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
     int isMedium = (int) muon.isMediumMuon();
     muons_out->back().addUserInt("isMedium", isMedium);    
     muons_out->back().addUserInt("isSoft", muon.isSoftMuon(PV));    
-    muons_out->back().addUserInt("isTight", muon.isTightMuon(PV));    
+    muons_out->back().addUserInt("isTight", muon.isTightMuon(PV));     
     int isTracker = (int) muon.isTrackerMuon();
     muons_out->back().addUserInt("isTracker", isTracker); 
     muons_out->back().addUserInt("charge", muon.charge());
@@ -309,6 +334,8 @@ void TriMuonTriggerSelector::produce(edm::Event& iEvent, const edm::EventSetup& 
       muons_out->back().addUserInt("trackQuality", 999);
     else
       muons_out->back().addUserInt("trackQuality", (muon.innerTrack()->quality(reco::TrackBase::highPurity)));
+    muons_out->back().addUserFloat("dZpv", muon.muonBestTrack()->dz(PV.position()));
+    muons_out->back().addUserFloat("err_dZpv", muon.muonBestTrack()->dzError());
 
     // dr cut (same quantity as in HLTMuonDimuonL3Filter, to emulate HLT)
     float mudr = fabs( (- (muon.vx()-beamSpot.x0()) * muon.py() + (muon.vy()-beamSpot.y0()) * muon.px() ) / muon.pt() );
@@ -371,6 +398,5 @@ reco::Track TriMuonTriggerSelector::fix_track(const reco::Track *tk, double delt
 
   return reco::Track(tk->chi2(), tk->ndof(), tk->referencePoint(), tk->momentum(), tk->charge(), cov, tk->algo(), (reco::TrackBase::TrackQuality) tk->qualityMask());
 }
-
 
 DEFINE_FWK_MODULE(TriMuonTriggerSelector);
