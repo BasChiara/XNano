@@ -38,6 +38,8 @@ constexpr float X3872_MASS = 3.87165;
 constexpr float RHO_MASS = 0.77526;
 constexpr float JPSI_MASS = 3.096900;
 constexpr float B0_MASS = 5.27965;
+constexpr float W_MASS = 80.377;
+constexpr float W_WIDTH = 2.085;
 // S.P.'s code
 constexpr float KSHORT_SIGMA = 0.000013;
 // Guess
